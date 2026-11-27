@@ -22,3 +22,6 @@ create index if not exists github_prs_updated on public.github_prs (updated_at d
 -- No policies on purpose: anon/authenticated clients can't read or write.
 -- The board reads through the sharer's Supabase connector; the webhook writes with the service role.
 alter table public.github_prs enable row level security;
+-- Newer Supabase projects don't grant table privileges to API roles by default.
+-- The webhook (service role) needs these, or PostgREST answers 403.
+grant select, insert, update on public.github_prs to service_role;
