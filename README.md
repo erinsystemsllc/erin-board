@@ -24,3 +24,4 @@ Erin Systems-ийн багийн task tracker (Jira-г орлох). Jarvis LMS �
 3. Board PR-ийн төлөвийг work item дээр харуулна. PR нээгдэхэд **In Progress → Review**, merge хийхэд **Review → дараагийн алхам** (LMS: Done, EEA: On Develop).
 
 Тохиргооны алхмууд: [docs/github-setup.md](docs/github-setup.md)
+<!-- LMS-6661: GitHub PR sync test (2026-11-27). Safe to close. -->
