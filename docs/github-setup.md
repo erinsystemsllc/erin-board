@@ -2,7 +2,7 @@
 
 ## 1. Supabase
 
-Board-д холбогдсон Supabase project: `uolosxbouaksdxdmeoxp` (TeLog). `github_prs` хүснэгтийг энд үүсгэнэ.
+Erin board-ын Supabase project: `pkqwmcsodgcraqlljmcd` (egshge's Org). `github_prs` хүснэгт, `github-webhook` function, `GITHUB_WEBHOOK_SECRET` энд байна (2026-11-27-нд тохируулсан).
 
 ```bash
 # SQL editor-т supabase/migrations/001_github_prs.sql-ийг ажиллуулна, эсвэл:
@@ -17,7 +17,7 @@ Org-д 55 repo байгаа тул repo бүр дээр webhook нэмэхийн
 
 - Org → Settings → Developer settings → GitHub Apps → **New GitHub App**
 - Name: `Erin board`
-- Webhook URL: `https://uolosxbouaksdxdmeoxp.supabase.co/functions/v1/github-webhook`
+- Webhook URL: `https://pkqwmcsodgcraqlljmcd.supabase.co/functions/v1/github-webhook`
 - Webhook secret: дээрх `GITHUB_WEBHOOK_SECRET`
 - Repository permissions: **Pull requests: Read**, **Checks: Read**, **Metadata: Read** (diff харах, board-оос review хийх үед: Pull requests: Read & write, Contents: Read)
 - Subscribe to events: **Pull request**, **Pull request review**, **Check suite**
@@ -28,7 +28,7 @@ Org-д 55 repo байгаа тул repo бүр дээр webhook нэмэхийн
 
 ## 3. Board
 
-Board → Settings → **GitHub** → **Share Supabase data** (TeLog project-д хандах эрхтэй хүн дарна). Энэ нь GitHub ба TeLog-ийн query-г хамт share хийнэ.
+Board → Settings → **GitHub** → **Share Supabase data** (TeLog project-д хандах эрхтэй хүн дарна). Энэ нь GitHub-ийн query-г share хийнэ. "Include TeLog"-ийг TeLog project (`uolosxbouaksdxdmeoxp`)-д эрхтэй хүн л чагтана.
 
 ⚠️ Board дээр Supabase connector-ийг нэг л хүн share хийнэ, шинэ share өмнөхийг солино. TeLog хуудаснаас share хийх бол `telog-reports.js`-ийн query жагсаалтад `web/github.js`-ийн `GH_SQL`-ийг нэмэх хэрэгтэй.
 
