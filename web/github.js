@@ -9,7 +9,8 @@ window.ErinGitHub = function(E){
 'use strict';
 const {h, S, render, toast, canWrite, transition, wfOf, projOf, isDone, writeIssue} = E;
 const ARTIFACT = '4ebf8737-9594-4ea1-8999-5491704bc645';
-const PROJECT = 'uolosxbouaksdxdmeoxp';
+const PROJECT = 'pkqwmcsodgcraqlljmcd'; // Erin board Supabase project (github_prs + github-webhook)
+const TELOG_PROJECT = 'uolosxbouaksdxdmeoxp';
 const GH_SQL = "select issue_key, repo, number, title, state, draft, merged, url, author, head_ref, checks, review_state, updated_at::text as updated_at from public.github_prs where updated_at > now() - interval '120 days' order by updated_at desc limit 1000";
 
 // TeLog's shared queries, exactly as telog-reports.js shares them.
@@ -21,10 +22,11 @@ const TQ = {
   ent: {sql:"select work_date::text as d, issue_key, minutes, coalesce(comment, '') as comment from public.time_entries where employee_id = {{emp}} and work_date between '{{start}}'::date and '{{end}}'::date order by work_date, created_at", rules:{emp:{type:'integer', minimum:1}, start:DATE, end:DATE}},
   me: {sql:"select id from public.employees where email = '{{email}}'", rules:{email:{type:'string', pattern:'^[a-z0-9._%+-]+@[a-z0-9.-]+$'}}}
 };
-const callOf = (sql, rules) => Object.assign({tool:'execute_sql', kind:'call', args:{project_id:PROJECT, query:sql}}, rules ? {rules} : {});
+const callOf = (sql, rules, project) => Object.assign({tool:'execute_sql', kind:'call', args:{project_id:project || PROJECT, query:sql}}, rules ? {rules} : {});
 const ghCall = () => callOf(GH_SQL);
+const telogCalls = () => Object.keys(TQ).map(k => callOf(TQ[k].sql, TQ[k].rules, TELOG_PROJECT));
 
-const G = {rows:null, at:0, err:'', busy:false, shareBusy:false, off:false};
+const G = {rows:null, at:0, err:'', busy:false, shareBusy:false, off:false, withTelog:false};
 try { G.off = localStorage.getItem('erinGhAutoOff') === '1'; } catch(e){}
 const cl = window.claude;
 const use = (n) => (cl && cl.use ? cl.use(n) : Promise.resolve(null));
@@ -64,9 +66,11 @@ async function share(){
       const st = await perms.request(['mcp:Supabase', 'mcp:Claude Data']).catch(() => null);
       if (st && (st['mcp:Supabase'] === 'denied' || st['mcp:Claude Data'] === 'denied')) throw {code:'denied', message:'Allow Supabase and Claude Data for this board, then try again.'};
     }
-    const calls = Object.keys(TQ).map(k => callOf(TQ[k].sql, TQ[k].rules)).concat([ghCall()]);
+    // Keep TeLog in the share only if the sharer can reach the TeLog project too.
+    let calls = [ghCall()];
+    if (G.withTelog) calls = telogCalls().concat(calls);
     await mcp.callTool('Claude Data', 'share_live_queries', {artifact:ARTIFACT, connector:'Supabase', calls}, {cache:false});
-    toast('Shared. Everyone now sees PR status on work items (TeLog reports stay shared too).');
+    toast('Shared. Everyone now sees PR status on work items.' + (G.withTelog ? ' TeLog reports stay shared too.' : ''));
   } catch(e){ toast('Not shared (' + ((e && e.code) || 'error') + '): ' + ((e && e.message) || '')); }
   G.shareBusy = false; G.at = 0; refresh(true); render();
 }
@@ -117,10 +121,11 @@ function settingsSection(){
   const auto = h('input', {type:'checkbox', disabled:ro}); auto.checked = !G.off;
   auto.addEventListener('change', () => { G.off = !auto.checked; try { localStorage.setItem('erinGhAutoOff', G.off ? '1' : '0'); } catch(e){} render(); });
   return h('section', {class:'set-sec', id:'github'}, h('h2', {text:'GitHub'}),
-    h('p', {class:'lead', text:'PRs from the LMS and EEA repos reach this board through a GitHub webhook that writes to the Supabase table github_prs (TeLog project). Put the work item key (LMS-123, EEA-45) in the branch name or PR title. Setup steps: project doc "erin-board-github".'}),
+    h('p', {class:'lead', text:'PRs from the LMS and EEA repos reach this board through a GitHub webhook that writes to the Supabase table github_prs (Erin board Supabase project). Put the work item key (LMS-123, EEA-45) in the branch name or PR title. Setup steps: project doc "erin-board-github".'}),
     h('div', {class:'set-row'}, h('div', {class:'grow'}, h('div', {text:'PR data'}), h('div', {class:'sub', text:status})),
       h('button', {class:'btn sm', text:'Refresh', onclick:() => refresh(true)}),
-      ro ? null : h('button', {class:'btn sm primary', disabled:G.shareBusy, text:G.shareBusy ? 'Sharing…' : 'Share Supabase data', title:'Shares the GitHub query and the TeLog queries together, run with your Supabase access', onclick:share})),
+      ro ? null : h('button', {class:'btn sm primary', disabled:G.shareBusy, text:G.shareBusy ? 'Sharing…' : 'Share Supabase data', title:'Shares the read-only GitHub query, run with your Supabase access', onclick:share}),
+      ro ? null : (() => { const c = h('input', {type:'checkbox'}); c.checked = G.withTelog; c.addEventListener('change', () => { G.withTelog = c.checked; }); return h('label', {class:'hint', style:'display:flex;align-items:center;gap:.375rem', title:'One person shares Supabase on this board; a new share replaces the old one. Tick this only if you can also open the TeLog project.'}, c, 'Include TeLog'); })()),
     h('div', {class:'set-row'}, h('label', {style:'display:flex;align-items:center;gap:.5rem'}, auto, 'Move my board\'s work items automatically: PR opened → Review, PR merged → next step (this browser)')));
 }
 return {refresh, prSection, prBadge, settingsSection, prsFor};
